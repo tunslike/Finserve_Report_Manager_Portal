@@ -1,0 +1,45 @@
+@import url('https://fonts.googleapis.com/css2?family=Arimo:ital,wght@0,400..700;1,400..700&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    scroll-behavior: smooth;
+    font-family: "Poppins", sans-serif;
+  }
+
+  .feat-list li {
+    @apply flex justify-start items-center text-[0.8rem] gap-2 leading-8 text-[#8e98c7]
+  }
+
+  .feat-list-icon {
+    @apply text-[0.7rem] text-primaryRed
+  }
+
+  .active-dash-link {
+    @apply bg-[#ffffff] h-[48px] p-3 rounded-[0.4rem]
+  }
+
+  .dash-link li {
+    @apply flex justify-start items-center text-[0.9rem] font-[300] gap-3 leading-[3.5rem] text-[#e3e3e3]
+  }
+
+  .dash-link-icon {
+    @apply text-[1rem] text-[#6a82ad]
+  }
+
+  .form-input {
+    @apply w-[60%] text-primaryBlue placeholder-[0.85rem] placeholder-[#a6a6a6] outline outline-[#e4e4e4] rounded-[0.7rem] my-2 p-3 text-[0.85rem];
+  }
+
+  .form-input-label {
+    @apply text-[0.8rem] text-[#525252] ml-3;
+  }
+
+  .dash-header-icon {
+    @apply h-[40px] w-[40px] rounded-[40px] flex justify-center items-center cursor-pointer bg-[#eff1ff];
+  }
