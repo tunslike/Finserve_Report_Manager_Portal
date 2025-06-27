@@ -3,9 +3,9 @@ import { FiSearch } from "react-icons/fi";
 import { IoNotificationsSharp } from "react-icons/io5";
 import { LuUserRound } from "react-icons/lu";
 import { useSelector } from 'react-redux';
-
-
-const DashboardHeader = () => {
+import { IoArrowBack } from "react-icons/io5";
+import {BackButton} from '../components';
+const DashboardHeader = ({type, title}) => {
 
     const subscriberData = useSelector((state) => state.subscriber.subscriberData)
     const [searchText, setSearchText] = useState('');
@@ -13,14 +13,26 @@ const DashboardHeader = () => {
 
     return (
         <div className='bg-white rounded-[1rem] w-full flex justify-between p-5 items-center'>
+
+            {(type == 'dash') && 
             <div className='ml-5'>
                 <h1 className='text-[1.3rem] font-[500] text-primaryBlue'>Welcome, {subscriberData.firstname}</h1>
                 <h5 className='text-[0.7rem] text-[#2b7ec6]'>Last Login: 29 May 2025</h5>
-            </div>
+            </div> }
+
+            {(type == 'page') && 
+                <div className='ml-5 flex items-center gap-x-3'>
+                    <BackButton to="/dashboard" />
+                    <h1 className='text-[1.1rem] font-[500] text-primaryBlue'>{title}</h1>
+                </div> }
+
+            {(type == 'dash') && 
             <div className='w-[50%] flex justify-between items-center border border-[#e4e4e4] rounded-[1.5rem] px-7 py-3'>
                 <input type='text' value={searchText} onChange={(e) => setSearchText(e.target.value)} className='placeholder-[#a8a8a8] text-[0.85rem] w-full' placeholder='Enter report name to search...' />
                 <FiSearch className='text-[#ababab] text-[1.2rem]' />
-            </div>
+            </div> }
+
+
             <div className='flex justify-start items-center gap-5 mr-5'>
                 <div className='relative dash-header-icon'>
                     <IoNotificationsSharp className='text-[1.3rem] text-primaryBlue' />

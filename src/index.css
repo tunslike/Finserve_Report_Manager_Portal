@@ -36,6 +36,10 @@
     @apply w-[60%] text-primaryBlue placeholder-[0.85rem] placeholder-[#a6a6a6] outline outline-[#e4e4e4] rounded-[0.7rem] my-2 p-3 text-[0.85rem];
   }
 
+  .row-form-input {
+    @apply w-[300px] text-primaryBlue placeholder-[0.85rem] placeholder-[#a6a6a6] outline outline-[#e4e4e4] rounded-[0.7rem] my-2 p-3 text-[0.85rem];
+  }
+
   .form-input-label {
     @apply text-[0.8rem] text-[#525252] ml-3;
   }

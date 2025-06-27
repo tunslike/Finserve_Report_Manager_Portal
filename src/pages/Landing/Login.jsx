@@ -11,6 +11,8 @@ import { Preloader } from '../../components';
 import { FaArrowRightLong } from "react-icons/fa6";
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { RiInformation2Line } from "react-icons/ri";
+import { useSearchParams } from 'react-router-dom';
 
 const Login = () => {
 
@@ -19,6 +21,9 @@ const Login = () => {
   
   const [showPassword, setShowPassword] = useState(false);
   const [isError, setIsError] = useState(false);
+
+  const [searchParams] = useSearchParams();
+  const changeStatus = searchParams.get('chpwd_status');
 
   const validationSchema = Yup.object({
       subscriberId: Yup.string().email("Invalid email").required("Email is required"),
@@ -31,7 +36,9 @@ const Login = () => {
 
       const success = await login(values);
 
-      if (success) navigate("/dashboard");
+      if (success == 1) navigate("/dashboard");
+
+      if(success == 2) navigate("/changePassword")
 
       setSubmitting(false);
       setIsError(true);
@@ -64,6 +71,20 @@ const Login = () => {
                       <h1 className='font-[600] text-[#1d2328] text-[1.1rem] mt-[4rem]'>Login to Account</h1>
                       <h5 className='text-[#5c6794] text-[0.85rem] mt-1'>Provide your account details to login</h5>
 
+                      {(isError) &&
+                        <div className='flex items-center text-[0.75rem] rounded-lg font-[400] p-2 mt-5 justify-start gap-x-3 bg-[#f8d7db] border-[#f5c6cc] border text-[#721c25]'>
+                            <RiInformation2Line className='text-[2rem]' />
+                            Incorrect Username or Password!
+                        </div>
+                      }
+
+
+                      {(changeStatus) &&
+                        <div className='flex items-center text-[0.75rem] rounded-lg font-[400] p-2 mt-5 justify-start gap-x-3 bg-[#d4eddb] border-[#c3e7cb] border text-[#155724]'>
+                            <RiInformation2Line className='text-[2rem]' />
+                            Change password was successful! Please login
+                        </div>
+                      }
 
                       <Formik
                           initialValues={{ subscriberId: "", accessCode: "" }}

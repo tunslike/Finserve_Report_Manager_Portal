@@ -18,8 +18,6 @@ export const subscriberSlice = createSlice({
         },
         logoutSubscriber: (state) => {
             state.subscriberData = []
-            state.subscriberProfile = []
-            state.earningsBalance = []
         }
     },
 });

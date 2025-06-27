@@ -7,7 +7,11 @@ import { HiDocumentDuplicate } from "react-icons/hi2";
 import { FaRegCircleCheck } from "react-icons/fa6";
 import { CgCloseR } from "react-icons/cg";
 import { BsFiletypePdf } from "react-icons/bs";
+import { APIBaseUrl } from '../../constants';
+import Swal from 'sweetalert2';
+import axios from 'axios';
 import Modal from 'react-modal';
+import { useNavigate } from 'react-router-dom';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import {
         DashboardSideBar, 
@@ -15,15 +19,21 @@ import {
         DashboardSummaryBox,
         TableDisplay, ProgressBar
     } from '../../components';
-import { loadDashboardSummary } from '../../services/ReportManagerService';  
+import { loadDashboardSummary, downloadPortfolioReport } from '../../services/ReportManagerService';
+import { useSelector } from 'react-redux';
 
 
 const Dashboard = () => {
 
+    const navigate = useNavigate();
+    const subscriberData = useSelector((state) => state.subscriber.subscriberData)
     const [dashData, setDashData] = useState([]);
     const [reportGroups, setReportGroups] = useState([]);
     const [reportHistory, setReportHistory] = useState([]);
     const [loading, setLoading] = useState(false);
+    const [reportName, setReportName] = useState('');
+    const [portfolioName, setPortfolioName] = useState('');
+
 
     // upload files settings
     const [uploadFiles, setUploadFiles] = useState([]);
@@ -37,6 +47,162 @@ const Dashboard = () => {
       const truncateFilename = (name, maxLength = 55) => {
         return name.length > maxLength ? name.slice(0, maxLength - 3) + '...' : name;
       };
+
+
+      // handle upload and merge
+      const handleUploadMerge = async () => {
+        
+        const formData = new FormData();
+
+        for (let file of uploadFiles) {
+          formData.append('files', file);
+        }
+
+        formData.append('reportName', reportName);
+        formData.append('portfolioId', portfolioName);
+        formData.append('createdBy', subscriberData.subscriberId);
+
+        try {
+
+          console.log(formData);
+
+          setLoading(true)
+
+          const token = localStorage.getItem('token');
+
+          if(token) {
+
+            const res = await axios.post(`${APIBaseUrl.baseUrl}report-manager/upload`, formData, {
+              headers: { 'Content-Type': 'multipart/form-data',
+                'Authorization' : `Bearer ${token}`
+               },
+            });
+
+            console.log(res)
+  
+            setLoading(false)
+            // close modal
+            closeModal()
+
+            if(res.status == 200 && res.data.responseCode == 200) {
+
+              Swal.fire({
+                title: "Portfolio Report!",
+                text: res.data.message,
+                icon: "success",
+                confirmButtonText: "OK",
+              });
+
+              return;
+            }
+
+          }else {
+            // login again
+            navigate('/login')
+          }
+        
+        } catch (err) {
+          setLoading(false)
+          console.error('Upload and merge failed', err);
+        }
+      };
+
+      // process create portfolio report
+      const processCreatePortfolioReport = () => {
+
+        // validate fields
+        if(reportName == '') {
+          Swal.fire({
+            title: "Portfolio Report!",
+            text: "Please provide report name!",
+            icon: "error",
+            confirmButtonText: "OK",
+          });
+          return;
+        }
+
+        if(portfolioName == '') {
+          Swal.fire({
+            title: "Portfolio Report!",
+            text: "Please select portfolio!",
+            icon: "error",
+            confirmButtonText: "OK",
+          });
+          return;
+        }
+
+          Swal.fire({
+            title: "Portfolio Report?",
+            text: "Do you want to create new portfolio report?",
+            icon: "warning",
+            showCancelButton: true,
+            confirmButtonColor: "#0ad13f",
+            cancelButtonColor: "#d33",
+            confirmButtonText: "Yes, Proceed!",
+          }).then((result) => {
+            if (result.isConfirmed) {
+            
+                //submit completed task
+                handleUploadMerge();
+                return;
+              
+            }
+          });
+
+      }
+      // end of create portfolion report
+
+
+      // handle download
+      const handleDownload = async (reportGroupId) => {
+        try {
+          const token = localStorage.getItem('token'); // or use context/auth store
+
+          if(!token) {
+            navigate("/login")
+          }
+      
+          const response = await axios.get(
+            `http://localhost:9193/api/v1/report-manager/download-portfolioReport?reportGroupId=${reportGroupId}`,
+            {
+              responseType: 'blob', // important for binary download
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            }
+          );
+      
+       // ✅ Extract filename from header
+    let filename = reportGroupId+'_report.pdf';
+    const disposition = response.headers['content-disposition'];
+
+    if (disposition) {
+      const filenameStarMatch = disposition.match(/filename\*\s*=\s*UTF-8''([^;\n]*)/i);
+      if (filenameStarMatch && filenameStarMatch[1]) {
+        filename = decodeURIComponent(filenameStarMatch[1]);
+      } else {
+        const filenameMatch = disposition.match(/filename\s*=\s*"?([^;\n"]+)"?/i);
+        if (filenameMatch && filenameMatch[1]) {
+          filename = filenameMatch[1];
+        }
+      }
+    }
+
+    // ✅ Trigger download
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', filename);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+  } catch (error) {
+    console.error('Download failed:', error);
+  }
+};
+
+
 
     // handle upload file change
     const handleFileChange = (e) => {
@@ -79,6 +245,7 @@ const Dashboard = () => {
             console.log(e.error);
         }
     }
+    // end of function
 
     // fetch data
     useEffect(() => {
@@ -91,28 +258,28 @@ const Dashboard = () => {
         <div className="flex min-h-screen">
 
         {/* Left Sidebar - 20% */}
-            <DashboardSideBar />
+            <DashboardSideBar url='Dashboard' />
          {/* End of Left Sidebar - 20% */}
   
         {/* Main Content - 80% */}
         <div className="w-4/5 bg-[#eff1ff] p-6">
                     
             {/* Dashboard Header */}
-             <DashboardHeader />    
+             <DashboardHeader type="dash" />    
              
              {/* Dashboard Summary Box */}
              <DashboardSummaryBox data={dashData} modal={openModal} />
 
              {/* Table window */}
              <div className='flex justify-start items-start mt-8 gap-5'>
-                <TableDisplay icon={<IoDocuments className='text-[#959595] text-[1.2rem]' />} title="Recent Report Groups">
+                <TableDisplay h_style="h-[400px]" icon={<IoDocuments className='text-[#959595] text-[1.2rem]' />} title="Recent Portfolio Report">
                 <div className="overflow-x-auto">
                 <table className="min-w-full border-collapse bg-white shadow-md rounded-lg">
                   <thead>
                     <tr className="bg-gray-100 text-gray-700 text-[0.8rem] text-left">
                       <th className="px-4">#</th>
                       <th className="px-4 py-2">Report Name</th>
-                      <th className="px-4 py-2">Total</th>
+                      <th className="px-4 py-2">Total Reports</th>
                       <th className="px-4 py-2">Date</th>
                       <th className="px-4 py-2">Action</th>
                     </tr>
@@ -126,10 +293,14 @@ const Dashboard = () => {
                       reportGroups.map((report, index) => (
                         <tr key={index} className={index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}>
                           <td className="px-4 py-2">{index + 1}</td>
-                          <td className="px-4 py-2">{report.reportGroupName}</td>
+                          <td className="px-4 py-2"><a className='text-blue-500 underline' href='#'>{report.reportGroupName}</a></td>
                           <td className="px-4 py-2 text-center">{report.totalReports}</td>
                           <td className="px-4 py-2">{new Date(report.dateCreated).toLocaleDateString()}</td>
-                          <td><a href="#" title='Download Report'><LuDownload className='text-primaryRed text-[1rem] mx-auto' /></a></td>
+                          <td>
+                              <button className='' title='Download Report' onClick={() => handleDownload(report.reportGroupId)}>
+                                <LuDownload className='text-primaryRed ml-7 text-[1rem]' />
+                              </button>
+                          </td>
                         </tr>
                       ))
                     )}
@@ -138,7 +309,7 @@ const Dashboard = () => {
               </div>
                 </TableDisplay>
 
-                <TableDisplay icon={<GrDocumentText className='text-[#959595] text-[1.2rem]' />} title="Uploaded Report History">
+                <TableDisplay h_style="h-[400px]" icon={<GrDocumentText className='text-[#959595] text-[1.2rem]' />} title="Uploaded Report History">
                 <div className="overflow-x-auto">
                 <table className="min-w-full border-collapse bg-white shadow-md rounded-lg">
                   <thead>
@@ -162,7 +333,7 @@ const Dashboard = () => {
                           <td className="px-4 py-2">{report.reportName}</td>
                           <td className="px-4 py-2 text-center">{report.views}</td>
                           <td className="px-4 py-2">{new Date(report.date_created).toLocaleDateString()}</td>
-                          <td><a href="#" title='Download Report'><LuDownload className='text-primaryRed text-[1rem] mx-auto' /></a></td>
+                          <td><a title='Download Report'><LuDownload className='text-primaryRed text-[1rem] mx-auto' /></a></td>
                         </tr>
                       ))
                     )}
@@ -174,6 +345,8 @@ const Dashboard = () => {
         </div>
         {/* End of Main Content - 80% */}
       </div>
+
+
        {/* Modal */}
     <Modal
     isOpen={isOpen}
@@ -190,19 +363,20 @@ const Dashboard = () => {
 
      <div className='py-5 px-5 modal-inner-body overflow-scroll'>
 
-           <div className='mt-1'>
+     <div className='mt-1'>
+     <h4 className='form-input-label'>Report Name</h4>
+     <input className='form-input' value={reportName} onChange={(e) => setReportName(e.target.value)} placeholder='Enter portfolio report name' />
+</div>
+
+           <div className='mt-3'>
                     <h4 className='form-input-label'>Portfolio Name</h4>
-                    <select className='form-input'>
-                        <option>Select here</option>
-                        <option>Portfolio One</option>
+                    <select onChange={(e) => setPortfolioName(e.target.value)} className='form-input'>
+                        <option value='' selected="selected">Select here</option>
+                        <option value='08f66268-fef7-42d5-9d49-4b1484624441'>Portfolio One</option>
                     </select>
            </div>
 
-           <div className='mt-3'>
-                <h4 className='form-input-label'>Report Name</h4>
-                <input className='form-input' placeholder='Enter portfolio report name' />
-           </div>
-
+       
            <div className='mt-3'>
                 <h4 className='form-input-label'>Upload PDF Report</h4>
                 <input
@@ -271,8 +445,7 @@ const Dashboard = () => {
 
      <div className="flex justify-between items-center gap-2 p-4 border-t border-[#f0f0f0]">
         
-            <button disabled={(uploadFiles.length > 0) ? false : true} className={`${(uploadFiles.length > 0) ? `bg-[#435de0]` : `bg-[#bbc4f0]`} px-[30px] py-[10px] text-[0.8rem] flex items-center gap-x-2 rounded-[0.5rem] text-white`}>Create Report <HiDocumentDuplicate className='text-[1.1rem]' /></button>
-        
+            <button onClick={processCreatePortfolioReport} disabled={(uploadFiles.length > 0 || reportName == '' || portfolioName == '') ? false : true} className={`${(uploadFiles.length > 0) ? `bg-[#435de0]` : `bg-[#bbc4f0]`} px-[30px] py-[10px] text-[0.8rem] flex items-center gap-x-2 rounded-[0.5rem] text-white`}>Create Report <HiDocumentDuplicate className='text-[1.1rem]' /></button>
      </div>
 </Modal>
 {/* Modal */}
